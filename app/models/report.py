@@ -43,8 +43,8 @@ class Report(Base):
     )
     user = relationship("User", back_populates="reports")
     hotel = relationship("Hotel", back_populates="reports")
+    inspection = relationship("Inspection", back_populates="report", uselist=False)
 
-    #TODO: В будущем появиться FK на Inspection / Booking
 
 
 class Photo(Base):
