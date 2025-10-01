@@ -19,6 +19,12 @@ RAW_SCORE_RULES: dict[str, dict[str, int]] = {
     "q8": {"a": 1, "b": -1, "c": 0},
 }
 
+TRAVEL_PARTY_TO_GUESTS = {
+    "a": 1,
+    "b": 2,
+    "c": 3,
+}
+
 RAW_SCORE_MIN = -4
 RAW_SCORE_MAX = 5
 NORMALIZED_SCORE_MAX = 12
@@ -153,6 +159,12 @@ def update_application_status(
     status: ProgramApplicationStatus,
     reviewer_comment: str | None = None,
 ) -> ProgramApplication:
+    if status == ProgramApplicationStatus.accepted:
+        return accept_application(
+            db,
+            application=application,
+            reviewer_comment=reviewer_comment,
+        )
     application.status = status
     application.reviewer_comment = reviewer_comment
     db.add(application)
@@ -201,14 +213,56 @@ def submit_application(
             'Ваша кандидатура одобрена на участие в программе "Секретный гость"'
         )
 
+    application.score = normalized_score
+    if target_status == ProgramApplicationStatus.accepted:
+        return accept_application(
+            db,
+            application=application,
+            reviewer_comment=reviewer_comment,
+        )
+
     application.reviewer_comment = reviewer_comment
     application.status = target_status
-    application.score = normalized_score
     db.add(application)
     db.commit()
     db.refresh(application)
     return application
 
+def _populate_user_from_application(application: ProgramApplication) -> None:
+    user = application.user
+    if user is None:
+        return
+
+    user.role = "guest"
+
+    existing_cities = list(user.cities or [])
+    for city in (application.city_home, application.city_desired):
+        normalized_city = (city or "").strip()
+        if normalized_city and normalized_city not in existing_cities:
+            existing_cities.append(normalized_city)
+    user.cities = existing_cities
+
+    guests = TRAVEL_PARTY_TO_GUESTS.get(application.travel_party)
+    if guests is not None:
+        user.guests = guests
+
+
+def accept_application(
+    db: Session,
+    *,
+    application: ProgramApplication,
+    reviewer_comment: str | None = None,
+) -> ProgramApplication:
+    application.reviewer_comment = reviewer_comment
+    application.status = ProgramApplicationStatus.accepted
+    _populate_user_from_application(application)
+
+    db.add(application)
+    db.commit()
+    db.refresh(application)
+    if application.user is not None:
+        db.refresh(application.user)
+    return application
 
 def store_application_photos(
     *,
