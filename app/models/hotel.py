@@ -30,3 +30,4 @@ class Hotel(Base):
         passive_deletes=True,
     )
     reports = relationship("Report", back_populates="hotel")
+    inspections = relationship("Inspection", back_populates="hotel")

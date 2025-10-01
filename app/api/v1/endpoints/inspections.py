@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_db_session
+from app.api.deps import get_current_user, get_db_session
+from app.models.user import User
 from app.schemas.inspection import InspectionCreate, InspectionRead
 from app.services import inspection_service
 
@@ -20,12 +21,15 @@ def _get_inspection_or_404(db: Session, inspection_id: str):
     response_model=InspectionRead,
     status_code=status.HTTP_201_CREATED,
     summary="Создание проверки",
-    description="Создает проверку и устанавливает статус 'ожидает отчет'",
+    description="Создает проверку для выбранного пользователем отеля",
 )
-def create_inspection(payload: InspectionCreate, db: Session = Depends(get_db_session)) -> InspectionRead:
-    inspection = inspection_service.create_inspection(db, report_id=payload.report_id)
+def create_inspection(
+    payload: InspectionCreate,
+    db: Session = Depends(get_db_session),
+    current_user: User = Depends(get_current_user),
+) -> InspectionRead:
+    inspection = inspection_service.create_inspection(db, user=current_user, hotel_id=payload.hotel_id)
     return inspection_service.serialize_inspection(inspection)
-
 
 @router.get(
     "/{inspection_id}",

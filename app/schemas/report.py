@@ -23,6 +23,7 @@ class ReportCreate(BaseModel):
     hotel_id: int = Field(gt=0)
     checkout_date: datetime
     user_id: int | None = Field(default=None, gt=0)
+    inspection_id: str | None = None
 
 
 class ReportRead(BaseModel):
@@ -30,6 +31,7 @@ class ReportRead(BaseModel):
 
     id: str
     user_id: int | None
+    inspection_id: str | None
     hotel_id: int
     checkout_date: datetime
     status: ReportStatus

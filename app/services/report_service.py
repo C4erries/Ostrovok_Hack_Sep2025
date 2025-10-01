@@ -40,12 +40,40 @@ def create_report(
     hotel_id: int,
     checkout_date: datetime,
     user_id: int | None,
+    inspection_id: str | None = None,
 ) -> Report:
+    inspection: Inspection | None = None
+    assigned_user_id = user_id
+
+    if inspection_id is not None:
+        inspection = db.get(Inspection, inspection_id)
+        if inspection is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Проверка не найдена")
+        if inspection.report_id is not None:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Для проверки уже создан отчет",
+            )
+        if assigned_user_id is not None and inspection.user_id != assigned_user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Проверка принадлежит другому пользователю",
+            )
+        if inspection.hotel_id != hotel_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Отчет должен быть создан для отеля из проверки",
+            )
+        assigned_user_id = inspection.user_id
+    
+    
     report = Report(
         hotel_id=hotel_id,
         checkout_date=_to_utc(checkout_date),
-        user_id=user_id,
+        user_id=assigned_user_id,
     )
+    if inspection is not None:
+        report.inspection = inspection
     db.add(report)
     db.commit()
     db.refresh(report)
@@ -132,6 +160,7 @@ def serialize_report(report: Report) -> ReportRead:
         {
             "id": report.id,
             "user_id": report.user_id,
+            "inspection_id": report.inspection.id if report.inspection else None,
             "hotel_id": report.hotel_id,
             "checkout_date": _to_utc(report.checkout_date),
             "status": report.status,

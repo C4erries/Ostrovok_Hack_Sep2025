@@ -47,6 +47,7 @@ def create_report(payload: ReportCreate, db: Session = Depends(get_db_session)) 
         hotel_id=payload.hotel_id,
         checkout_date=payload.checkout_date,
         user_id=payload.user_id,
+        inspection_id=payload.inspection_id,
     )
     return report_service.serialize_report(report)
 

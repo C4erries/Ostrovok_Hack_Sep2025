@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import Column, DateTime, Enum, ForeignKey, String
+from sqlalchemy import Column, DateTime, Enum, ForeignKey, Integer, String
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
@@ -19,6 +19,8 @@ class Inspection(Base):
     __tablename__ = "inspections"
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    hotel_id = Column(Integer, ForeignKey("hotels.id", ondelete="CASCADE"), nullable=False, index=True)
     report_id = Column(String, ForeignKey("reports.id", ondelete="SET NULL"), nullable=True, index=True)
     status = Column(
         Enum(*INSPECTION_STATUSES, name="inspection_status"),
@@ -34,3 +36,5 @@ class Inspection(Base):
     )
 
     report = relationship("Report", back_populates="inspection")
+    user = relationship("User", back_populates="inspections")
+    hotel = relationship("Hotel", back_populates="inspections")

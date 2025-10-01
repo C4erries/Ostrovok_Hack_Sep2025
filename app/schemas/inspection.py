@@ -13,13 +13,15 @@ class InspectionStatus(str, Enum):
 
 
 class InspectionCreate(BaseModel):
-    report_id: str | None = Field(default=None)
+    hotel_id: int = Field(gt=0)
 
 
 class InspectionRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: str
+    user_id: int
+    hotel_id: int
     report_id: str | None = None
     status: InspectionStatus
     created_at: datetime

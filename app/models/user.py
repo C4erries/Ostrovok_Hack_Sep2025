@@ -31,3 +31,4 @@ class User(Base):
 
     applications = relationship("ProgramApplication", back_populates="user")
     reports = relationship("Report", back_populates="user")
+    inspections = relationship("Inspection", back_populates="user")
